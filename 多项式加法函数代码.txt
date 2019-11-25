@@ -1,0 +1,173 @@
+#include<stdio.h>
+#include<stdlib.h>
+typedef struct PNode
+{
+	int coef;//系数
+	int exp;//指数
+	struct PNode *link;
+}PNode;//结点的结构体类型
+typedef struct
+{
+	struct PNode *head;
+}polynominal;//多项式的结构体类型
+void Create(polynominal *p)
+{
+	PNode *pre;//指向插入项前面的项(辅助插入,防止断链)
+	PNode *pn;//存放插入的各项
+	p->head=(PNode *)malloc(sizeof(PNode));
+	p->head->coef=0;
+	p->head->exp=-1;
+	p->head->link=NULL;//创建表头结点
+	while(1)
+	{
+		pn=(PNode *)malloc(sizeof(PNode));
+		printf("系数coef:\n");
+		scanf("%d",&pn->coef);
+		printf("指数exp:\n");
+		scanf("%d",&pn->exp);
+		if(pn->exp<0)
+			break;//当输入项指数小于0时，结束输入
+		pre=p->head;
+		while(pre->link&&pre->link->exp>pn->exp)
+			pre=pre->link;
+		pn->link=pre->link;
+		pre->link=pn;//插入各项并保证为降序排列
+	}
+}//多项式的创建:先初始化一个空的带表头结点的单链表来表示多项式，然后逐个插入各项，并保证多项式的各项降幂排列
+void Add(polynominal *px,polynominal *qx)
+{
+    PNode *p,*q,*q1,*t;
+	q1=qx->head;//q1指向qx的表头结点,也是q指针的前驱结点
+	p=px->head->link;//p指针指向px的第一个结点
+	q=q1->link;//q指针指向qx的第一个结点
+	while(p&&q)
+	{
+		if(q->exp>p->exp)//q指数大于p指数时，跳过q指数大的项
+		{
+			q1=q;
+			q=q->link;
+		}
+		else if(p->exp==q->exp)//指数相等时，系数相加
+		{
+			q->coef=p->coef+q->coef;
+			if(q->coef==0)//若相加后系数为0，删除结点，释放空间，移动指针
+			{
+				q1->link=q->link;
+				free(q);
+				q=q1->link;
+				p=p->link;
+			}
+			else//若相加后系数不为0，移动指针
+			{
+				q1=q;
+				q=q->link;
+				p=p->link;
+			}
+		}
+		else//p的指数大于q的指数，以p的系数和指数生成新的结点插入q之前
+		{
+			t=(PNode *)malloc(sizeof(PNode));
+			t->coef=p->coef;
+			t->exp=p->exp;
+			t->link=q1->link;
+			q1->link=t;
+			p=p->link;
+		}
+	}
+	if(p)//若px中还有结点没有处理完，将px中剩下的数链接到qx后
+		q1->link=p;
+}//多项式的加法：把多项式px跟qx相加，并将qx作为结果多项式
+void Multiplication(polynominal* px, polynominal* qx, polynominal* rx)
+{
+	PNode* p, * q, * t, * pre, * s;
+	rx->head = (PNode*)malloc(sizeof(PNode));
+	rx->head->coef = 0;
+	rx->head->exp = -1;
+	rx->head->link = NULL;
+	p = px->head->link;
+	q = qx->head->link;
+	while (p)
+	{
+		t = (PNode*)malloc(sizeof(PNode));
+		t->coef = p->coef * q->coef;
+		t->exp = p->exp + q->exp;
+		pre = rx->head;
+		while (pre->link && pre->link->exp > t->exp)
+			pre = pre->link;
+		if (pre->link && (t->exp == pre->link->exp))
+		{
+			pre->link->coef += t->coef;
+			if (pre->link->coef == 0)
+			{
+				s = pre->link;
+				pre->link = s->link;
+				free(s);
+			}
+		}
+		else
+		{
+			t->link = pre->link;
+			pre->link = t;
+		}
+		q = q->link;
+		if (q == NULL)
+		{
+			q = qx->head->link;
+			p = p->link;
+		}
+	}
+}//将px qx多项式相乘，结果放置在rx中
+void Output(polynominal *p)
+{
+	PNode *t;
+	t=p->head->link;
+	if(t==NULL)
+		printf("0");
+	while(t)
+	{
+		if(t->exp>0)
+		{
+			if(abs(t->coef)!=1)//指数大于0，且系数不为+-1
+			{
+			   printf("%dx^%d",t->coef,t->exp);
+		       if(t->link!=NULL&&t->link->coef>0)
+			      printf("+");
+		       t=t->link;
+			}
+			else if(t->coef==1)//指数大于0，系数为1
+			{
+				printf("x^%d",t->exp);
+				if(t->link!=NULL&&t->link->coef>0)
+			      printf("+");
+		        t=t->link;
+			}
+			else//指数大于0，系数为-1
+			{
+				printf("-x^%d",t->exp);
+				if(t->link!=NULL&&t->link->coef>0)
+			      printf("+");
+		        t=t->link;
+			}
+		}
+		else//指数为0(常数项)
+		{
+		   printf("%d",t->coef);
+		   t=t->link;
+		}
+	}
+	putchar(10);
+}//多项式的输出
+int main()
+{
+	polynominal a,b,c;
+	Create(&a);
+	printf("多项式1为:");
+	Output(&a);
+	Create(&b);
+	printf("多项式2为:");
+	Output(&b);
+	printf("相乘后的多项式为:");
+	Multiplication(&a,&b,&c);
+	Output(&c);
+	return 0;
+}
